@@ -5,4 +5,8 @@
                  [net.cgrand/moustache "1.1.0"]
                  [enlive "1.0.0"]
 ;                 [google-maps "0.5.1-SNAPSHOT"]
+                 [clj-egsiona "0.1.0-SNAPSHOT"]
+                                        ;                 [sqlitejdbc "0.5.6"]
+                                        ;[org.xerial/sqlite-jdbc "3.6.13"]
+                 [org.xerial/sqlite-jdbc "3.7.2"]
                  ])
