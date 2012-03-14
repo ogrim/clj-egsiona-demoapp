@@ -1,13 +1,18 @@
 (ns demoapp.core
   (:use [demoapp controller]
         [ring.adapter.jetty]
-        [ring.middleware resource reload file]
+        [ring.middleware resource reload file params]
         [ring.util.response]
         [net.cgrand.moustache])
   (:require [clj-egsiona.core :as e])
   (:import [java.net URL]
            [de.l3s.boilerpipe.extractors ArticleExtractor DefaultExtractor]
            ))
+
+(e/set-obt "localhost:8085")
+(e/set-db {:classname   "org.sqlite.JDBC"
+           :subprotocol "sqlite"
+           :subname     "database.db"})
 
 (defn in? [element seq]
   (if (some #{element} seq) true false))
@@ -21,9 +26,6 @@
     \: \newline \! \? \= \- \, \{ \} \[ \] \( \) \_ \\ \/ \; \' \@ \# \$ \% \& \*
     \| })
 
-(defn stop-chars [url]
-  (distinct (filter #(not (in? % whitelisted-letters)) (extract-content url))))
-
 (defn clean-text [s]
   (->> (filter #(in? % whitelisted-letters) s)
        reverse
@@ -31,17 +33,20 @@
        reverse
        (apply str)))
 
-(defn extract-content [url]
+(defn extract-content-default [url]
   (.. DefaultExtractor INSTANCE (getText (URL. url))))
 
-(comment (defn extract-content [url]
-   (.. ArticleExtractor INSTANCE (getText (URL. url)))))
+(defn extract-content [url]
+  (.. ArticleExtractor INSTANCE (getText (URL. url))))
 
 (defn process-url [url]
   (-> url
       extract-content
       clean-text
       e/process-text))
+
+(defn process-text [s]
+  (-> s clean-text e/process-text))
 
 (def p1 "http://www.bt.no/nyheter/innenriks/Spar-sterk-innvandrervekst-i-byene-2669852.html")
 (def p2 "http://www.bt.no/nyheter/lokalt/Venter-pa-godkjenning-2669298.html")
@@ -51,23 +56,30 @@
 (defn page [req]
   (response "This is page"))
 
+(defn tag-article [req]
+  (let [params (-> req :form-params)
+        url (params "url")
+        content (extract-content url)
+        locations (process-text content)
+        locs (apply str(map #(str % "\n") locations))]
+    (response
+     (str url "\n\n" "--------------------------------" "\n\n"
+          locs "\n" "--------------------------------""\n\n"
+          content))))
+
 (def routes
   (app
-   [""] page
-   ["test"] {:get page}
+   [""] {:get input-page
+         :post (wrap-params tag-article)}
    ["map" &] (delegate map-page)))
 
 (defonce server (run-jetty #'routes {:port 8081 :join? false}))
 
-(e/set-obt "localhost:8085")
+
 ;(e/set-obt "/home/ogrim/bin/The-Oslo-Bergen-Tagger")
-
-(comment (e/process-text "Tror du at Sandnes er en lokasjon?"))
-
-(e/set-db {:classname   "org.sqlite.JDBC"
-           :subprotocol "sqlite"
-           :subname     "database.db"})
-
 
 ;(e/create-tables)
 ;(e/process-text "Tror du at Sandnes er en lokasjon?")
+
+(comment (defn stop-chars [url]
+   (distinct (filter #(not (in? % whitelisted-letters)) (extract-content url)))))
