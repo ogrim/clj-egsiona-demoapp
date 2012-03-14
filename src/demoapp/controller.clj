@@ -7,3 +7,9 @@
 
 (defn input-page [req]
   (->> (slurp "./resources/article.html") response))
+
+(defn start-page [req]
+  (->> (slurp "./resources/start.html") response))
+
+(defn text-input-page [req]
+  (->> (slurp "./resources/text.html") response))

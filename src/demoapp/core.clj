@@ -48,13 +48,7 @@
 (defn process-text [s]
   (-> s clean-text e/process-text))
 
-(def p1 "http://www.bt.no/nyheter/innenriks/Spar-sterk-innvandrervekst-i-byene-2669852.html")
-(def p2 "http://www.bt.no/nyheter/lokalt/Venter-pa-godkjenning-2669298.html")
-
 (def api-key "AIzaSyA0IrRqPrqcuQTdbUS5o57-EsPEbFKRsOc")
-
-(defn page [req]
-  (response "This is page"))
 
 (defn tag-article [req]
   (let [params (-> req :form-params)
@@ -67,10 +61,22 @@
           locs "\n" "--------------------------------""\n\n"
           content))))
 
+(defn tag-text [req]
+  (let [params (-> req :form-params)
+        text (params "text")
+        locations (process-text text)
+        locs (apply str(map #(str % "\n") locations))]
+    (response
+     (str locs "\n" "--------------------------------""\n\n"
+          text))))
+
 (def routes
   (app
-   [""] {:get input-page
-         :post (wrap-params tag-article)}
+   [""] (delegate start-page)
+   ["url" &] {:get input-page
+              :post (wrap-params tag-article)}
+   ["text" &] {:get text-input-page
+               :post (wrap-params tag-text)}
    ["map" &] (delegate map-page)))
 
 (defonce server (run-jetty #'routes {:port 8081 :join? false}))
