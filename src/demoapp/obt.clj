@@ -41,14 +41,3 @@
 
 (defn process-text [s]
   (-> s clean-text e/process-text))
-
-(defn tag-article [req]
-  (let [params (-> req :form-params)
-        url (params "url")
-        content (extract-content url)]
-    (process-text content)))
-
-(defn tag-text [req]
-  (let [params (-> req :form-params)
-        text (params "text")]
-    (process-text text)))

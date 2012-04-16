@@ -9,4 +9,8 @@
 
 (deftemplate map-page "test.html" [])
 
-(deftemplate result-page "result.html" [])
+(deftemplate result-page "result.html"
+  [article locations]
+  [:div#article :p] (content article)
+  [:div#locations :ul :li] (clone-for [location locations]
+                                      [:a] (content location)))

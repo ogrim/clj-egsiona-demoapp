@@ -8,31 +8,26 @@
 
 (def api-key "AIzaSyA0IrRqPrqcuQTdbUS5o57-EsPEbFKRsOc")
 
-(defn post-input-page [req]
-  (response (apply str (map #(str % " - ") (obt/tag-article req)))))
-(defn post-text-input-page [req]
-  (response (apply str (map #(str % " - ") (obt/tag-text req)))))
+(defn view-results-page [req]
+  (let [params (:form-params req)
+        [text locations] (process-params params)]
+    (->> (result-page text locations) response)))
 
-(defn post-text-input-page [req]
-  (response (str req)))
-
-(defn view-result-page [req]
-  (->> (result-page) response))
-
-(defn view-start-page [req]
-  (->> (start-page) response))
+(defn process-params [params]
+  (if-let [url (get params "url")]
+    (let [content (obt/extract-content url)]
+      [content (obt/process-text content)])
+    (let [content (get params "text")]
+      [content (obt/process-text content)])))
 
 (def routes
   (app
    (wrap-file "resources")
-;   (wrap-reload '[demoapp.templates])
-   (wrap-reload ['demoapp.templates])
-   [""] view-start-page
-   ["url" &] {:get (response input-page)
-              :post (wrap-params post-input-page)}
-   ["text" &] {:get (response text-input-page)
-               :post (wrap-params post-text-input-page)}
-   ["map" &] (delegate map-page)
-   ["result" &] view-result-page))
+   [""] (fn [_] (->> (start-page) response))
+   ["url" &] {:get (fn [_] (->> (input-page) response))
+              :post (wrap-params view-results-page)}
+   ["text" &] {:get (fn [_] (->> (text-input-page) response))
+               :post (wrap-params view-results-page)}
+   ["map" &] (delegate map-page)))
 
 (defonce server (run-jetty #'routes {:port 8081 :join? false}))
