@@ -4,12 +4,17 @@
   (:import [java.net URL]
            [de.l3s.boilerpipe.extractors ArticleExtractor DefaultExtractor]))
 
-(e/set-obt "localhost:8085")
+(defn configure-obt [path db]
+  (do (e/set-obt path)
+      (e/set-db db)
+      (e/create-tables)))
+
+;(e/set-obt "localhost:8085")
 ;(e/set-obt "/home/ogrim/bin/The-Oslo-Bergen-Tagger")
 ;(e/create-tables)
-(e/set-db {:classname   "org.sqlite.JDBC"
-           :subprotocol "sqlite"
-           :subname     "database.db"})
+;(e/set-db {:classname   "org.sqlite.JDBC"
+;           :subprotocol "sqlite"
+;           :subname     "database.db"})
 
 (def whitelisted-letters
   #{\A \B \C \D \E \F \G \H \I \J \K \L \M \N \O \P \Q \R \S \T \U \V \W \X \Y \Z
