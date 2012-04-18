@@ -17,9 +17,9 @@
 (defn process-params [params]
   (if-let [url (get params "url")]
     (let [content (obt/extract-content url)]
-      [content (obt/process-text content)])
+      [(obt/clean-text content) (obt/process-text content)])
     (let [content (get params "text")]
-      [content (obt/process-text content)])))
+      [(obt/clean-text content) (obt/process-text content)])))
 
 (defn add-span [s]
   (let [trimmed (trim-trailing-punctuation s)

@@ -9,3 +9,6 @@
 
 (defn punctuation? [c]
   (in? c #{\. \, \: \; \! \? }))
+
+(defn strip-newlines [s]
+  (->> s (map #(if (= % \newline) " " %)) (apply str)))

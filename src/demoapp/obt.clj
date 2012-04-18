@@ -30,7 +30,8 @@
        reverse
        (drop-while #(= % \newline))
        reverse
-       (apply str)))
+       (apply str)
+       strip-newlines))
 
 (defn extract-content-default [url]
   (.. DefaultExtractor INSTANCE (getText (URL. url))))
