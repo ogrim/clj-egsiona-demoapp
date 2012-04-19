@@ -54,86 +54,97 @@
     (let [content (get params "text")]
       [(clean-text content) (process-text content)])))
 
-(defn add-span [s]
+(defn enumerate-locations [locations]
+  (let [i (atom 0)]
+    (map #(vector (swap! i inc) %) locations)))
+
+(defn get-location-i [location locations]
+  (loop [[[i name] & more] locations]
+    (cond (empty? name) nil
+          (= name location) i
+          :else (recur more))))
+
+(defn add-span [i s]
   (let [trimmed (trim-trailing-punctuation s)
         end (.substring s (count trimmed) (count s))]
-    (str "<span class=\"highlight " "tag-" (.toLowerCase trimmed) "\">" trimmed "</span>" end " ")))
+    (str "<span class=\"highlight " "tag-" i "\">" trimmed "</span>" end " ")))
 
 (defn compare-multi [v1 v2]
   (= (map #(trim-trailing-punctuation (.toLowerCase %)) v1) v2))
 
-(defn process-multi-location [s location]
+(defn process-multi-location [s [i location]]
   (if (empty? location) s
-   (let [text (->> (str/split s #"\s") (filter seq))
-         in-span? (atom false)]
-     (loop [[word & more :as tokens] text, acc [], result []]
-       (cond (empty? word)
-             (->> result flatten (map #(str % " ")) (apply str))
+      (let [text (->> (str/split s #"\s") (filter seq))
+            in-span? (atom false)]
+        (loop [[word & more :as tokens] text, acc [], result []]
+          (cond (empty? word)
+                (->> result flatten (map #(str % " ")) (apply str))
 
-             @in-span?
-             (if (= word "</span>")
-               (do (reset! in-span? false)
-                   (recur more [] (conj result word)))
-               (recur more [] (conj result word)))
+                @in-span?
+                (if (= word "</span>")
+                  (do (reset! in-span? false)
+                      (recur more [] (conj result word)))
+                  (recur more [] (conj result word)))
 
-             (= word "<span class=\"highlight")
-             (do (reset! in-span? true)
-                 (if (empty? acc)
-                   (recur more [] (conj result word))
-                   (recur tokens [] (conj result acc))))
+                (= word "<span class=\"highlight")
+                (do (reset! in-span? true)
+                    (if (empty? acc)
+                      (recur more [] (conj result word))
+                      (recur tokens [] (conj result acc))))
 
-             (compare-multi acc location)
-             (recur tokens [] (conj result (add-span (apply str (map #(str % " ") acc)))))
+                (compare-multi acc location)
+                (recur tokens [] (conj result (add-span i (apply str (map #(str % " ") acc)))))
 
-             (and (empty? acc)
-                  (= (trim-trailing-punctuation (.toLowerCase word)) (first location)))
-             (recur more [word] result)
+                (and (empty? acc)
+                     (= (trim-trailing-punctuation (.toLowerCase word)) (first location)))
+                (recur more [word] result)
 
-             (= (trim-trailing-punctuation (.toLowerCase word)) (nth location (count acc)))
-             (recur more (conj acc word) result)
+                (= (trim-trailing-punctuation (.toLowerCase word)) (nth location (count acc)))
+                (recur more (conj acc word) result)
 
-             (= (trim-trailing-punctuation (.toLowerCase word)) (first location))
-             (recur more [word] (conj result acc))
+                (= (trim-trailing-punctuation (.toLowerCase word)) (first location))
+                (recur more [word] (conj result acc))
 
-             (seq acc)
-             (recur tokens [] (conj result acc))
+                (seq acc)
+                (recur tokens [] (conj result acc))
 
-             :else (recur more [] (conj result word)))))))
+                :else (recur more [] (conj result word)))))))
 
 (defn process-single-location [locations s]
-  (loop [[word & more :as tokens] (->> (str/split s #"\s") (remove empty?)), in-span? false, result []]
-    (cond (empty? word) result
+  (if (empty? locations) s
+      (let [location-lookup (map second locations)
+            location-map (into {} (map #(vector (second %) (first %)) locations))
+            word-fn #(-> % .toLowerCase trim-trailing-punctuation)]
+        (loop [[word & more :as tokens] (->> (str/split s #"\s") (remove empty?)), in-span? false, result []]
+          (cond (empty? word) result
 
-          in-span?
-          (recur more (if (= word "</span>") false true) (conj result word))
+                in-span?
+                (recur more (if (= word "</span>") false true) (conj result word))
 
-          (and (= word "<span") (= (first more) "class=\"highlight"))
-          (recur more true (conj result word))
+                (and (= word "<span") (= (first more) "class=\"highlight"))
+                (recur more true (conj result word))
 
-          (in? (-> word .toLowerCase trim-trailing-punctuation) locations)
-          (recur more false (conj result (add-span word)))
+                (in? (word-fn word) location-lookup)
+                (recur more false (conj result (add-span (get location-map (word-fn word)) word)))
 
-          :else (recur more false (conj result word))
-          )))
+                :else (recur more false (conj result word)))))))
 
 (defn article->html [article locations]
-  (let [single-locations (filter #(= (count (str/split % #"\s")) 1) locations)
-        multi-locations (->> locations
-                             (map #(str/split % #"\s"))
-                             (filter #(> (count %) 1)))]
-    (->> (reduce process-multi-location article multi-locations)
-         (process-single-location single-locations)
-         (interpose " ")
-         (apply str)
-         .trim
-         str->html
-         )))
+  (if (empty? locations) (str->html article)
+   (let [single-locations (filter #(= (count (str/split (second %) #"\s")) 1) locations)
+         multi-locations (->> locations
+                              (map #(vector (first %) (str/split (second %) #"\s")))
+                              (filter #(> (count (second %)) 1)))]
+     (->> (reduce process-multi-location article multi-locations)
+          (process-single-location single-locations)
+          (interpose " ")
+          (apply str)
+          .trim
+          str->html))))
 
 (defn view-results-page [req]
   (let [params (:form-params req)
-        [text locations] (process-params params)]
-    (->> (result-page (article->html text locations) locations)
+        [text locations] (process-params params)
+        numbered-locations (enumerate-locations locations)]
+    (->> (result-page (article->html text numbered-locations) numbered-locations)
          response)))
-
-(defn store-tags [article tags]
-  false)

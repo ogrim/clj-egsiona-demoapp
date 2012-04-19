@@ -34,6 +34,6 @@
 (deftemplate result-page "result.html"
   [article locations]
   [:div#article :p] (content article)
-  [:ul.tags :li] (clone-for [location locations]
+  [:ul.tags :li] (clone-for [[i location] locations]
                             [:a] (content location)
-                            [:a] (add-class (str "tag-" location))))
+                            [:a] (add-class (str "tag-" i))))
