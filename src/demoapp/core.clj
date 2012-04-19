@@ -77,11 +77,12 @@
 (def routes
   (app
    (wrap-file "resources")
-   [""] (fn [_] (->> (start-page) response))
+   ["" &] (fn [_] (->> (start-page) response))
    ["url" &] {:get (fn [_] (->> (input-page) response))
               :post (wrap-params view-results-page)}
    ["text" &] {:get (fn [_] (->> (text-input-page) response))
                :post (wrap-params view-results-page)}
-   ["map" &] (delegate map-page)))
+   ["map" &] (delegate map-page)
+   ["zomg" &] (fn [_] (->> (zomg-page) response))))
 
 (defonce server (run-jetty #'routes {:port 8081 :join? false}))

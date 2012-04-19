@@ -34,5 +34,7 @@
 (deftemplate result-page "result.html"
   [article locations]
   [:div#article :p] (content article)
-  [:div#locations :ul :li] (clone-for [location locations]
+  [:ul.tags :li] (clone-for [location locations]
                                       [:a] (content location)))
+
+(deftemplate zomg-page "result.html" [])

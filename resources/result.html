@@ -5,25 +5,52 @@
     <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
   </head>
   <body>
+
     <div id="wrapper">
-      <div id="navigation">
-        <ul>
-          <li><a href="/">Home</a></li>
-        </ul>
-      </div>
+      <ul class="navigation">
+        <li><a href="/">Home</a></li>
+        <li><a href="/">URL</a></li>
+        <li><a href="/">Text</a></li>
+      </ul>
 
       <h1>Suggested locations</h1>
       <div id="content">
         <div id="article">
+   <script src="/js/jquery.js"></script>
+   <script>
+     $(document).ready(function(){
+       $("ul.tags a").click(function(event){
+         event.preventDefault();
+         $(this).toggleClass("highlight");
+       });
+
+       $("li.select-all").click(function(event){
+          event.preventDefault();
+          $("ul.tags a").addClass("highlight");
+       });
+
+       $("li.deselect-all").click(function(event){
+          event.preventDefault();
+          $("ul.tags a").removeClass("highlight");
+       });
+
+     });
+   </script>
           <p>article text goes here</p>
         </div>
 
         <div id="locations">
-          <ul>
+          <ul class="navigation">
+            <li class="select-all" ><a href="#">Select all</a></li>
+            <li class="deselect-all"><a href="#">Deselect all</a></li>
+          </ul>
+
+
+          <ul class="tags">
             <li><a href="#">location</a></li>
           </ul>
 
-        </div>
+          </div>
       </div>
     </div>
   </body>

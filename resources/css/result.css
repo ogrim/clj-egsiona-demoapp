@@ -49,7 +49,7 @@ h1 {
 #locations {
     float: right;
     width: 34%;
-    padding: 10px;
+    padding: 0 10px 10px 10px;
 }
 
 ul li {
@@ -72,19 +72,35 @@ ul li a {
     color: #eee;
 }
 
-#navigation ul li a {
+ul.navigation {
+    margin-bottom: 25px;
+}
+
+ul.navigation li {
     display: inline;
+}
+
+ul.navigation li a {
     padding: 5px;
     font-size: 10px;
     border-radius: 6px;
 }
 
-ul li a:hover {
+ul li a:hover, #locations a.highlight {
     background: #495966;
     color: #eee;
 }
 
-.highlight {
+#locations ul.navigation li a {
+    background: #eee;
+    color: #777;
+}
+#locations ul.navigation li a:hover {
+    background: #777;
+    color: #eee;
+}
+
+#article .highlight {
     background: #383838;
     color: #eee;
     padding: 0 4px;
