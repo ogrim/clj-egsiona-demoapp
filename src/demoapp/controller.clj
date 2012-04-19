@@ -2,12 +2,16 @@
   (:use [demoapp tools templates]
         [ring.util.response])
   (:require [clj-egsiona.core :as e]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [clojure.java.jdbc :as sql])
   (:import [java.net URL]
            [de.l3s.boilerpipe.extractors ArticleExtractor DefaultExtractor]))
 
+(def ^{:dynamic true :private true} *db* (atom nil))
+
 (defn configure-obt [path db]
-  (do (e/set-obt path)
+  (do (reset! *db* db)
+      (e/set-obt path)
       (e/set-db db)
       (e/create-tables)))
 
@@ -60,10 +64,23 @@
 
 (defn process-multi-location [s location]
   (if (empty? location) s
-   (let [text (->> (str/split s #"\s") (filter seq))]
+   (let [text (->> (str/split s #"\s") (filter seq))
+         in-span? (atom false)]
      (loop [[word & more :as tokens] text, acc [], result []]
        (cond (empty? word)
              (->> result flatten (map #(str % " ")) (apply str))
+
+             @in-span?
+             (if (= word "</span>")
+               (do (reset! in-span? false)
+                   (recur more [] (conj result word)))
+               (recur more [] (conj result word)))
+
+             (= word "<span class=\"highlight")
+             (do (reset! in-span? true)
+                 (if (empty? acc)
+                   (recur more [] (conj result word))
+                   (recur tokens [] (conj result acc))))
 
              (compare-multi acc location)
              (recur tokens [] (conj result (add-span (apply str (map #(str % " ") acc)))))
@@ -83,22 +100,40 @@
 
              :else (recur more [] (conj result word)))))))
 
+(defn process-single-location [locations s]
+  (loop [[word & more :as tokens] (->> (str/split s #"\s") (remove empty?)), in-span? false, result []]
+    (cond (empty? word) result
+
+          in-span?
+          (recur more (if (= word "</span>") false true) (conj result word))
+
+          (and (= word "<span") (= (first more) "class=\"highlight"))
+          (recur more true (conj result word))
+
+          (in? (-> word .toLowerCase trim-trailing-punctuation) locations)
+          (recur more false (conj result (add-span word)))
+
+          :else (recur more false (conj result word))
+          )))
+
 (defn article->html [article locations]
-  (let [tokens (str/split article #"\s")
-        single-locations (filter #(= (count (str/split % #"\s")) 1) locations)
+  (let [single-locations (filter #(= (count (str/split % #"\s")) 1) locations)
         multi-locations (->> locations
                              (map #(str/split % #"\s"))
-                             (filter #(> (count %) 1)))
-        word-fn (fn [s] (-> s .toLowerCase trim-trailing-punctuation))
-        test-fn (fn [s] (in? (word-fn s) single-locations))
-        single-span (map #(if (test-fn %) (add-span %) %) tokens)
-        multi-span (->> single-span (interpose " ") (apply str))]
-    (->> (reduce process-multi-location multi-span multi-locations)
+                             (filter #(> (count %) 1)))]
+    (->> (reduce process-multi-location article multi-locations)
+         (process-single-location single-locations)
+         (interpose " ")
+         (apply str)
          .trim
-         str->html)))
+         str->html
+         )))
 
 (defn view-results-page [req]
   (let [params (:form-params req)
         [text locations] (process-params params)]
     (->> (result-page (article->html text locations) locations)
          response)))
+
+(defn store-tags [article tags]
+  false)

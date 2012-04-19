@@ -121,5 +121,5 @@ ul li a:hover, #locations a.highlight {
     color: #eee;
     padding: 0 4px;
     border-radius: 4px;
-    margin-right: 2px;
+    margin: 0 2px;
 }
