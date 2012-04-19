@@ -4,10 +4,22 @@
 }
 
 #wrapper {
-    width: 1000px;
     margin-top: 50px;
     margin-left: 70px;
 }
+
+#article {
+    float: left;
+    width: 600px;
+    background: #eee;
+    padding: 10px;
+}
+
+#locations {
+    float: left;
+    padding: 0 10px 10px 10px;
+}
+
 
 a {
     text-decoration: none;
@@ -39,18 +51,6 @@ h1 {
     color: #eee;
 }
 
-#article {
-    float: left;
-    width: 60%;
-    background: #eee;
-    padding: 10px;
-}
-
-#locations {
-    float: right;
-    width: 34%;
-    padding: 0 10px 10px 10px;
-}
 
 ul li {
     list-style: none;
@@ -100,6 +100,17 @@ ul li a:hover, #locations a.highlight {
     background: #eee;
     color: #777;
 }
+
+#locations ul.tags li a {
+    font-size: 16px;
+    display: inline;
+}
+
+#locations ul.tags li {
+    margin-bottom: 30px;
+
+}
+
 #locations ul.navigation li a:hover {
     background: #777;
     color: #eee;
