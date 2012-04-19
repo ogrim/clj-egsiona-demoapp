@@ -35,6 +35,7 @@
   [article locations]
   [:div#article :p] (content article)
   [:ul.tags :li] (clone-for [location locations]
-                                      [:a] (content location)))
+                            [:a] (content location)
+                            [:a] (add-class (str "tag-" location))))
 
 (deftemplate zomg-page "result.html" [])

@@ -91,6 +91,11 @@ ul li a:hover, #locations a.highlight {
     color: #eee;
 }
 
+#article span.active {
+    background: #748795;
+    color: #eee;
+}
+
 #locations ul.navigation li a {
     background: #eee;
     color: #777;

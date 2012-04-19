@@ -24,7 +24,7 @@
 (defn add-span [s]
   (let [trimmed (trim-trailing-punctuation s)
         end (.substring s (count trimmed) (count s))]
-    (str "<span class=\"highlight\">" trimmed "</span>" end " ")))
+    (str "<span class=\"highlight " "tag-" (.toLowerCase trimmed) "\">" trimmed "</span>" end " ")))
 
 (defn compare-multi [v1 v2]
   (= (map #(trim-trailing-punctuation (.toLowerCase %)) v1) v2))

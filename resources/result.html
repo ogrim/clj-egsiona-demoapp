@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link href="/css/result.css" rel="stylesheet" type="text/css">
+    <link href="/css/style.css" rel="stylesheet" type="text/css">
     <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
   </head>
   <body>
@@ -9,33 +9,41 @@
     <div id="wrapper">
       <ul class="navigation">
         <li><a href="/">Home</a></li>
-        <li><a href="/">URL</a></li>
-        <li><a href="/">Text</a></li>
+        <li><a href="/url">URL</a></li>
+        <li><a href="/text">Text</a></li>
       </ul>
 
       <h1>Suggested locations</h1>
       <div id="content">
         <div id="article">
-   <script src="/js/jquery.js"></script>
-   <script>
-     $(document).ready(function(){
-       $("ul.tags a").click(function(event){
-         event.preventDefault();
-         $(this).toggleClass("highlight");
-       });
 
-       $("li.select-all").click(function(event){
-          event.preventDefault();
-          $("ul.tags a").addClass("highlight");
-       });
+          <script src="/js/jquery.js"></script>
+          <script>
+            $(document).ready(function(){
+              $("ul.tags a").click(function(event){
+              event.preventDefault();
+              $(this).toggleClass("highlight");
+            });
 
-       $("li.deselect-all").click(function(event){
-          event.preventDefault();
-          $("ul.tags a").removeClass("highlight");
-       });
+            $("li.select-all").click(function(event){
+              event.preventDefault();
+              $("ul.tags a").addClass("highlight");
+              $("#article span").addClass("active");
+            });
 
-     });
-   </script>
+            $("li.deselect-all").click(function(event){
+              event.preventDefault();
+              $("ul.tags a").removeClass("highlight");
+              $("#article span").removeClass("active");
+            });
+
+            $("ul.tags a").hover(function(event){
+              var cname = "#article span." + $(this).attr('class');
+              $(cname).toggleClass("active");
+            });
+
+            });
+          </script>
           <p>article text goes here</p>
         </div>
 
@@ -45,12 +53,11 @@
             <li class="deselect-all"><a href="#">Deselect all</a></li>
           </ul>
 
-
           <ul class="tags">
             <li><a href="#">location</a></li>
           </ul>
 
-          </div>
+        </div>
       </div>
     </div>
   </body>
