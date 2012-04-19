@@ -65,7 +65,7 @@
           :else (recur more))))
 
 (defn add-span [i s]
-  (let [trimmed (trim-trailing-punctuation s)
+  (let [trimmed (-> s .trim trim-trailing-punctuation)
         end (.substring s (count trimmed) (count s))]
     (str "<span class=\"highlight " "tag-" i "\">" trimmed "</span>" end " ")))
 
@@ -81,12 +81,12 @@
                 (->> result flatten (map #(str % " ")) (apply str))
 
                 @in-span?
-                (if (= word "</span>")
+                (if (re-seq #"</span>" word)
                   (do (reset! in-span? false)
                       (recur more [] (conj result word)))
                   (recur more [] (conj result word)))
 
-                (= word "<span class=\"highlight")
+                (re-seq #"class=\"highlight" word)
                 (do (reset! in-span? true)
                     (if (empty? acc)
                       (recur more [] (conj result word))
@@ -114,14 +114,16 @@
   (if (empty? locations) s
       (let [location-lookup (map second locations)
             location-map (into {} (map #(vector (second %) (first %)) locations))
-            word-fn #(-> % .toLowerCase trim-trailing-punctuation)]
-        (loop [[word & more :as tokens] (->> (str/split s #"\s") (remove empty?)), in-span? false, result []]
+            word-fn #(-> % .trim .toLowerCase trim-trailing-punctuation)]
+        (loop [[word & more :as tokens] (->> (str/split s #"\s") (remove empty?))
+               in-span? false
+               result []]
           (cond (empty? word) result
 
                 in-span?
-                (recur more (if (= word "</span>") false true) (conj result word))
+                (recur more (if (re-seq #"</span>" word) false true) (conj result word))
 
-                (and (= word "<span") (= (first more) "class=\"highlight"))
+                (and (re-seq #"<span" word) (re-seq #"class=\"highlight" (first more)))
                 (recur more true (conj result word))
 
                 (in? (word-fn word) location-lookup)
