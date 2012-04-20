@@ -29,8 +29,6 @@
   [:h1] (content "Enter text")
   [:div#content] (content (html-resource "text.html")))
 
-(deftemplate map-page "test.html" [])
-
 (deftemplate result-page "result.html"
   [article locations]
   [:div#article :p] (content article)
