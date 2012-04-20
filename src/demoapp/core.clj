@@ -5,8 +5,6 @@
         [ring.util.response]
         [net.cgrand.moustache]))
 
-(def api-key "AIzaSyA0IrRqPrqcuQTdbUS5o57-EsPEbFKRsOc")
-
 (configure-obt "localhost:8085"
                {:classname   "org.sqlite.JDBC"
                 :subprotocol "sqlite"
