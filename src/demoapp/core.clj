@@ -3,12 +3,14 @@
         [ring.adapter.jetty]
         [ring.middleware resource reload file params]
         [ring.util.response]
-        [net.cgrand.moustache]))
+        [net.cgrand.moustache])
+  (:gen-class :main true))
 
-(configure-obt "localhost:8085"
-               {:classname   "org.sqlite.JDBC"
-                :subprotocol "sqlite"
-                :subname     "database.db"})
+(defn init [obt-path]
+  (configure-obt obt-path
+                 {:classname   "org.sqlite.JDBC"
+                  :subprotocol "sqlite"
+                  :subname     "database.db"}))
 
 (def routes
   (app
@@ -17,7 +19,8 @@
    ["url" &] {:get (fn [_] (->> (input-page) response))
               :post (wrap-params view-results-page)}
    ["text" &] {:get (fn [_] (->> (text-input-page) response))
-               :post (wrap-params view-results-page)}
-   ["map" &] (delegate map-page)))
+               :post (wrap-params view-results-page)}))
 
-(defonce server (run-jetty #'routes {:port 8081 :join? false}))
+(defn -main [port obt-path]
+  (do (init obt-path)
+      (run-jetty #'routes {:port (Integer/parseInt port) :join? false})))
