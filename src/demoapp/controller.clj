@@ -43,9 +43,13 @@
           (doall rs)))
         first :name))
 
-(defn get-all-articles []
-  (sql/with-connection @*db*
-    (sql/with-query-results rs ["select * from articles order by id asc"] (doall rs))))
+(defn get-all-article-id []
+  (let [result (atom [])]
+    (sql/with-connection @*db*
+      (sql/with-query-results rs
+        ["select id from articles order by id desc"]
+        (doseq [row rs] (swap! result conj row))))
+    (into [] (map :id @result))))
 
 (defn get-article [id]
   (let [result (atom {})]
@@ -61,6 +65,12 @@
                                      (map #(get-location (:article_id %) (:location_id %)))
                                      (into []))))
     @result))
+
+(defn listable-article [i]
+  (let [{tags :tags text :article} (get-article i)]
+    {:tagcount (count tags)
+     :preview (str (apply str (take 100 text)) "...")
+     :i i}))
 
 (defn persist-article [i text numbered-locations tags]
   (sql/with-connection @*db*
@@ -225,7 +235,8 @@
         (->> (article-page (article->html article locations) locations) response))))
 
 (defn view-article-list [req]
-  (->> (article-list-page) response))
+  (let [articles (map listable-article (get-all-article-id))]
+    (->> articles (article-list-page) response)))
 
 (defn post-article [req]
   (let [params (:form-params req)

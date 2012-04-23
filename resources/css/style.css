@@ -1,6 +1,7 @@
 * {
     margin: 0;
     padding: 0;
+    color: #383838;
 }
 
 #wrapper {
@@ -126,4 +127,14 @@ ul li a:hover, #locations a.highlight {
     padding: 0 4px;
     border-radius: 4px;
     margin: 0 2px;
+}
+
+#article-list a {
+    background: #fff;
+    color: #383838;
+}
+
+#article-list a:first-child {
+    background: #383838;
+    color: #EEEEEE;
 }

@@ -5,6 +5,10 @@
   ([expr] `(if-let [x# ~expr] (content x#) identity))
   ([expr & exprs] `(maybe-content (or ~expr ~@exprs))))
 
+(defmacro maybe-substitute
+  ([expr] `(if-let [x# ~expr] (substitute x#) identity))
+  ([expr & exprs] `(maybe-substitute (or ~expr ~@exprs))))
+
 (defn str->html [string]
   (-> string
       java.io.StringReader.
@@ -22,6 +26,8 @@
                     ["Insert Text" "/text"]
                     ["View Articles" "/article"]])
 
+(defsnippet iso-8859-1 "snippets.html" [:meta] [])
+
 (defsnippet menu "snippets.html" [:ul#menu]
   []
   [:li] (clone-for [[name href] start-menu-data]
@@ -34,20 +40,21 @@
                    [:a] (content name)
                    [:a] (set-attr :href href)))
 
-(deftemplate base "base.html" [{:keys [data h1]}]
+(deftemplate base "base.html" [{:keys [h1 main meta]}]
+  [:meta] (maybe-substitute meta)
   [:ul#top-menu :li] (content (top-menu))
   [:h1]  (maybe-content h1)
-  [:div#content] (maybe-content data))
+  [:div#content] (maybe-content main))
 
-(defn start-page [] (base {:data (menu)}))
+(defn start-page [] (base {:main (menu)}))
 
 (defn url-input-page []
   (base {:h1 "Enter URL"
-         :data ((snippet "snippets.html" [:form#url-form] []))}))
+         :main ((snippet "snippets.html" [:form#url-form] []))}))
 
 (defn text-input-page []
   (base {:h1 "Enter text"
-         :data ((snippet "snippets.html" [:form#text-form] []))}))
+         :main ((snippet "snippets.html" [:form#text-form] []))}))
 
 (deftemplate result-page "result.html"
   [article locations]
@@ -69,5 +76,16 @@
   [:ul.tags :li] (clone-for [[i location] locations]
                             [:a] (content location)
                             [:a] (add-class (str "tag-" i))))
-(defn article-list-page []
-  (base {:h1 "Article list"}))
+
+(defsnippet article-list "snippets.html" [:ul#article-list]
+  [articles]
+  [:li] (clone-for [{:keys [i tagcount preview]} articles]
+                   [[:a (nth-of-type 1)]] (set-attr :href (str "/article/" i))
+                   [[:a (nth-of-type 1)]] (content (str tagcount))
+                   [[:a (nth-of-type 2)]] (set-attr :href (str "/article/" i))
+                   [[:a (nth-of-type 2)]] (content preview)))
+
+(defn article-list-page [articles]
+  (base {:h1 "Article list"
+         :main (article-list articles)
+         :meta (iso-8859-1)}))
