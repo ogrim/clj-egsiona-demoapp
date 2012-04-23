@@ -20,7 +20,7 @@
               :post (wrap-params view-results-page)}
    ["text" &] {:get (fn [_] (->> (text-input-page) response))
                :post (wrap-params view-results-page)}
-   ["article"] {:get (delegate view-start-page)
+   ["article"] {:get (delegate view-article-list)
                 :post (wrap-params post-article)}
    ["article" id] {:get (delegate view-article id)}))
 

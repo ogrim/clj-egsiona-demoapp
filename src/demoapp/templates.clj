@@ -9,28 +9,45 @@
       first
       :content))
 
+(def start-menu-data [["insert from URL" "/url"]
+                      ["insert by text" "/text"]
+                      ["view articles" "/article"]])
+
+(def top-menu-data [["Home" "/"]
+                    ["Insert URL" "/url"]
+                    ["Insert Text" "/text"]
+                    ["View Articles" "/article"]])
+
 (defsnippet menu "menu.html" [:ul#menu]
-  [menu-data]
+  []
   [:li] (clone-for [[name href] menu-data]
                    [:a] (set-attr :href href)
                    [:a] (content name)))
 
-(def menu-data [["process URL" "/url"]
-                ["process text" "/text"]])
+(defsnippet top-menu "menu.html" [:ul#top-menu]
+  []
+  [:li] (clone-for [[name href] top-menu-data]
+                   [:a] (content name)
+                   [:a] (set-attr :href href)))
 
 (deftemplate start-page "base.html" []
-  [:div#content] (content (menu menu-data)))
+  [:ul#top-menu :li] (content (top-menu))
+  [:div#content] (content (menu)))
 
 (deftemplate input-page "base.html" []
   [:h1] (content "Enter URL")
+  [:ul#top-menu :li] (content (top-menu))
   [:div#content] (content (html-resource "article.html")))
 
 (deftemplate text-input-page "base.html" []
   [:h1] (content "Enter text")
+  [:ul#top-menu :li] (content (top-menu))
   [:div#content] (content (html-resource "text.html")))
 
 (deftemplate result-page "result.html"
   [article locations]
+  [:h1] (content "Suggested locations")
+  [:ul#top-menu :li] (content (top-menu))
   [:div#article :p] (content article)
   [:ul.tags :li] (clone-for [[i location] locations]
                             [:a] (content location)
@@ -42,6 +59,7 @@
 (deftemplate article-page "single.html"
   [article locations]
   [:h1] (content "View article")
+  [:ul#top-menu :li] (content (top-menu))
   [:div#article :p] (content article)
   [:ul.tags :li] (clone-for [[i location] locations]
                             [:a] (content location)

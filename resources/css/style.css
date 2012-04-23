@@ -72,6 +72,10 @@ ul li a {
     color: #eee;
 }
 
+ul.navigation li {
+    margin-right: 5px;
+}
+
 ul.navigation {
     margin-bottom: 25px;
 }

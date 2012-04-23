@@ -43,6 +43,10 @@
           (doall rs)))
         first :name))
 
+(defn get-all-articles []
+  (sql/with-connection @*db*
+    (sql/with-query-results rs ["select * from articles order by id asc"] (doall rs))))
+
 (defn get-article [id]
   (let [result (atom {})]
     (sql/with-connection @*db*
@@ -219,6 +223,9 @@
         locations (enumerate-locations tags)
         html (article->html article locations)]
     (->> (article-page html locations) response)))
+
+;; (defn view-article-list [req]
+;;   (let [articles ()]))
 
 (defn post-article [req]
   (let [params (:form-params req)
