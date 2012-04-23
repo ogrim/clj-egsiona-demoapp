@@ -1,6 +1,10 @@
 (ns demoapp.templates
   (:use [net.cgrand.enlive-html]))
 
+(defmacro maybe-content
+  ([expr] `(if-let [x# ~expr] (content x#) identity))
+  ([expr & exprs] `(maybe-content (or ~expr ~@exprs))))
+
 (defn str->html [string]
   (-> string
       java.io.StringReader.
@@ -9,7 +13,7 @@
       first
       :content))
 
-(def start-menu-data [["insert from URL" "/url"]
+(def start-menu-data [["insert by URL" "/url"]
                       ["insert by text" "/text"]
                       ["view articles" "/article"]])
 
@@ -18,31 +22,32 @@
                     ["Insert Text" "/text"]
                     ["View Articles" "/article"]])
 
-(defsnippet menu "menu.html" [:ul#menu]
+(defsnippet menu "snippets.html" [:ul#menu]
   []
-  [:li] (clone-for [[name href] menu-data]
+  [:li] (clone-for [[name href] start-menu-data]
                    [:a] (set-attr :href href)
                    [:a] (content name)))
 
-(defsnippet top-menu "menu.html" [:ul#top-menu]
+(defsnippet top-menu "snippets.html" [:ul#top-menu]
   []
   [:li] (clone-for [[name href] top-menu-data]
                    [:a] (content name)
                    [:a] (set-attr :href href)))
 
-(deftemplate start-page "base.html" []
+(deftemplate base "base.html" [{:keys [data h1]}]
   [:ul#top-menu :li] (content (top-menu))
-  [:div#content] (content (menu)))
+  [:h1]  (maybe-content h1)
+  [:div#content] (maybe-content data))
 
-(deftemplate input-page "base.html" []
-  [:h1] (content "Enter URL")
-  [:ul#top-menu :li] (content (top-menu))
-  [:div#content] (content (html-resource "article.html")))
+(defn start-page [] (base {:data (menu)}))
 
-(deftemplate text-input-page "base.html" []
-  [:h1] (content "Enter text")
-  [:ul#top-menu :li] (content (top-menu))
-  [:div#content] (content (html-resource "text.html")))
+(defn url-input-page []
+  (base {:h1 "Enter URL"
+         :data ((snippet "snippets.html" [:form#url-form] []))}))
+
+(defn text-input-page []
+  (base {:h1 "Enter text"
+         :data ((snippet "snippets.html" [:form#text-form] []))}))
 
 (deftemplate result-page "result.html"
   [article locations]
@@ -64,3 +69,5 @@
   [:ul.tags :li] (clone-for [[i location] locations]
                             [:a] (content location)
                             [:a] (add-class (str "tag-" i))))
+(defn article-list-page []
+  (base {:h1 "Article list"}))

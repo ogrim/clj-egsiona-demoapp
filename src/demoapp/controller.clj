@@ -220,12 +220,12 @@
 
 (defn view-article [req id]
   (let [{tags :tags article :article} (get-article id)
-        locations (enumerate-locations tags)
-        html (article->html article locations)]
-    (->> (article-page html locations) response)))
+        locations (enumerate-locations tags)]
+    (if (nil? article) (redirect "/article")
+        (->> (article-page (article->html article locations) locations) response))))
 
-;; (defn view-article-list [req]
-;;   (let [articles ()]))
+(defn view-article-list [req]
+  (->> (article-list-page) response))
 
 (defn post-article [req]
   (let [params (:form-params req)

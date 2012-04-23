@@ -16,7 +16,7 @@
   (app
    (wrap-file "resources")
    ["" &] (delegate view-start-page)
-   ["url" &] {:get (fn [_] (->> (input-page) response))
+   ["url" &] {:get (fn [_] (->> (url-input-page) response))
               :post (wrap-params view-results-page)}
    ["text" &] {:get (fn [_] (->> (text-input-page) response))
                :post (wrap-params view-results-page)}
