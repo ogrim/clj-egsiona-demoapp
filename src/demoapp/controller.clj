@@ -31,10 +31,11 @@
         (catch Exception e (println e)))))
 
 (defn get-next-id []
-  (let [result (sql/with-connection @*db*
-                 (sql/with-query-results rs ["select id from articles order by id desc limit 1"]
-                   (doall rs)))]
-    (if (empty? result) 1 (-> result first :id Integer/parseInt inc))))
+  (let [result (atom [])]
+    (sql/with-connection @*db*
+      (sql/with-query-results rs ["select id from articles order by id"]
+        (doseq [row rs] (swap! result conj (-> row :id Integer/parseInt)))))
+    (if (empty? @result) 1 (-> @result sort last inc))))
 
 (defn get-location [article-id location-id]
   (-> (sql/with-connection @*db*
