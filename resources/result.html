@@ -20,27 +20,41 @@
           <script src="/js/jquery.js"></script>
           <script>
             $(document).ready(function(){
+
               $("ul.tags a").click(function(event){
-              event.preventDefault();
-              $(this).toggleClass("highlight");
-            });
+                event.preventDefault();
+                var tagnameBefore = $(this).attr('class');
+                $(this).toggleClass("highlight");
+                var tagnameAfter = $(this).attr('class');
 
-            $("li.select-all").click(function(event){
-              event.preventDefault();
-              $("ul.tags a").addClass("highlight");
-              $("#article span").addClass("active");
-            });
+                if (tagnameBefore.length < tagnameAfter.length) {
+                  var tagname = tagnameBefore;
+                  $("input[name="+tagname+"]").val("true");
+                } else {
+                  var tagname = tagnameAfter;
+                  $("input[name="+tagname+"]").val("");
+                }
 
-            $("li.deselect-all").click(function(event){
-              event.preventDefault();
-              $("ul.tags a").removeClass("highlight");
-              $("#article span").removeClass("active");
-            });
+              });
 
-            $("ul.tags a").hover(function(event){
-              var cname = "#article span." + $(this).attr('class');
-              $(cname).toggleClass("active");
-            });
+              $("li.select-all").click(function(event){
+                event.preventDefault();
+                $("ul.tags a").addClass("highlight");
+                $("#article span").addClass("active");
+                $("form#tag-selection input").val("true");
+              });
+
+              $("li.deselect-all").click(function(event){
+                event.preventDefault();
+                $("ul.tags a").removeClass("highlight");
+                $("#article span").removeClass("active");
+                $("form#tag-selection input").val("");
+              });
+
+              $("ul.tags a").hover(function(event){
+                var cname = "#article span." + $(this).attr('class');
+                $(cname).toggleClass("active");
+              });
 
             });
           </script>
@@ -56,6 +70,10 @@
           <ul class="tags">
             <li><a href="#">location</a></li>
           </ul>
+
+          <form id="tag-selection">
+            <input type="hidden" name="tag-n" value="">
+          </form>
 
         </div>
       </div>
