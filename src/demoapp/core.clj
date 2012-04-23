@@ -26,3 +26,5 @@
 (defn -main [port obt-path]
   (do (init obt-path)
       (run-jetty #'routes {:port (Integer/parseInt port) :join? false})))
+
+; (def server (-main "8082" "localhost:8085"))
