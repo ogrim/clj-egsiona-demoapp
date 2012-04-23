@@ -48,9 +48,9 @@
   (let [result (atom [])]
     (sql/with-connection @*db*
       (sql/with-query-results rs
-        ["select id from articles order by id desc"]
+        ["select id from articles"]
         (doseq [row rs] (swap! result conj row))))
-    (into [] (map :id @result))))
+    (->> @result (map :id) (map #(Integer/parseInt %)) sort reverse (into []))))
 
 (defn get-article [id]
   (let [result (atom {})]
