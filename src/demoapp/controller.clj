@@ -150,3 +150,6 @@
         numbered-locations (enumerate-locations locations)]
     (->> (result-page (article->html text numbered-locations) numbered-locations)
          response)))
+
+(defn view-start-page [req]
+  (->> (start-page) response))

@@ -19,7 +19,9 @@
    ["url" &] {:get (fn [_] (->> (input-page) response))
               :post (wrap-params view-results-page)}
    ["text" &] {:get (fn [_] (->> (text-input-page) response))
-               :post (wrap-params view-results-page)}))
+               :post (wrap-params view-results-page)}
+   ["article" &] {:get (view-start-page)
+                  :post (view-start-page)}))
 
 (defn -main [port obt-path]
   (do (init obt-path)
