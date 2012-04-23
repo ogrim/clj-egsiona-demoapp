@@ -20,8 +20,9 @@
               :post (wrap-params view-results-page)}
    ["text" &] {:get (fn [_] (->> (text-input-page) response))
                :post (wrap-params view-results-page)}
-   ["article" &] {:get (delegate view-start-page)
-                  :post (wrap-params post-article)}))
+   ["article"] {:get (delegate view-start-page)
+                :post (wrap-params post-article)}
+   ["article" id] {:get (delegate view-article id)}))
 
 (defn -main [port obt-path]
   (do (init obt-path)

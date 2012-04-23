@@ -36,6 +36,28 @@
                    (doall rs)))]
     (if (empty? result) 1 (-> result first :id Integer/parseInt inc))))
 
+(defn get-location [article-id location-id]
+  (-> (sql/with-connection @*db*
+        (sql/with-query-results rs
+          ["select name from locations where article_id = ? and location_id = ?" article-id location-id]
+          (doall rs)))
+        first :name))
+
+(defn get-article [id]
+  (let [result (atom {})]
+    (sql/with-connection @*db*
+      (swap! result assoc :article
+             (-> (sql/with-query-results rs
+                   ["select * from articles where id = ?" id]
+                   (doall rs))
+                 first :article))
+      (swap! result assoc :tags (->> (sql/with-query-results rs
+                                       ["select * from tags where article_id = ?" id]
+                                       (doall rs))
+                                     (map #(get-location (:article_id %) (:location_id %)))
+                                     (into []))))
+    @result))
+
 (defn persist-article [i text numbered-locations tags]
   (sql/with-connection @*db*
     (sql/insert-rows "articles" [i text (java.sql.Timestamp. (.getTime (java.util.Date.)))])
@@ -184,15 +206,22 @@
   (let [params (:form-params req)
         [text locations] (process-params params)
         numbered-locations (enumerate-locations locations)
+        html (article->html text numbered-locations)
         _ (reset! current-content {:id (get-next-id) :text text :locations numbered-locations})]
-    (->> (result-page (article->html text numbered-locations) numbered-locations)
+    (->> (result-page html numbered-locations)
          response)))
 
 (defn view-start-page [req]
   (->> (start-page) response))
 
+(defn view-article [req id]
+  (let [{tags :tags article :article} (get-article id)
+        locations (enumerate-locations tags)
+        html (article->html article locations)]
+    (->> (article-page html locations) response)))
+
 (defn post-article [req]
   (let [params (:form-params req)
         tags (->> (filter #(= (second %) "true") params) (map first) (map #(str/split % #"tag-")) (map second))
         _ (persist-article (:id @current-content) (:text @current-content) (:locations @current-content) tags)]
-    (response (str (apply str tags) " - current content:" (apply str @current-content)))))
+    (redirect (str "/article/" (:id @current-content)))))

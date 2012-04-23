@@ -38,3 +38,11 @@
   [:form#tag-selection :input.tag-hidden]
   (clone-for [[i _] locations]
              [:input.tag-hidden] (set-attr :name (str "tag-" i))))
+
+(deftemplate article-page "single.html"
+  [article locations]
+  [:h1] (content "View article")
+  [:div#article :p] (content article)
+  [:ul.tags :li] (clone-for [[i location] locations]
+                            [:a] (content location)
+                            [:a] (add-class (str "tag-" i))))
