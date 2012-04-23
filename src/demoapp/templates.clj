@@ -35,6 +35,6 @@
   [:ul.tags :li] (clone-for [[i location] locations]
                             [:a] (content location)
                             [:a] (add-class (str "tag-" i)))
-  [:form#tag-selection :input]
+  [:form#tag-selection :input.tag-hidden]
   (clone-for [[i _] locations]
-             [:input] (set-attr :name (str "tag-" i))))
+             [:input.tag-hidden] (set-attr :name (str "tag-" i))))

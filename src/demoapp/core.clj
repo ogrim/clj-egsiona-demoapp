@@ -15,13 +15,13 @@
 (def routes
   (app
    (wrap-file "resources")
-   ["" &] (fn [_] (->> (start-page) response))
+   ["" &] (delegate view-start-page)
    ["url" &] {:get (fn [_] (->> (input-page) response))
               :post (wrap-params view-results-page)}
    ["text" &] {:get (fn [_] (->> (text-input-page) response))
                :post (wrap-params view-results-page)}
-   ["article" &] {:get (view-start-page)
-                  :post (view-start-page)}))
+   ["article" &] {:get (delegate view-start-page)
+                  :post (wrap-params post-article)}))
 
 (defn -main [port obt-path]
   (do (init obt-path)

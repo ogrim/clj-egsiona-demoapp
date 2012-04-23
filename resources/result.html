@@ -41,14 +41,14 @@
                 event.preventDefault();
                 $("ul.tags a").addClass("highlight");
                 $("#article span").addClass("active");
-                $("form#tag-selection input").val("true");
+                $("form#tag-selection input.tag-hidden").val("true");
               });
 
               $("li.deselect-all").click(function(event){
                 event.preventDefault();
                 $("ul.tags a").removeClass("highlight");
                 $("#article span").removeClass("active");
-                $("form#tag-selection input").val("");
+                $("form#tag-selection input.tag-hidden").val("");
               });
 
               $("ul.tags a").hover(function(event){
@@ -71,8 +71,9 @@
             <li><a href="#">location</a></li>
           </ul>
 
-          <form id="tag-selection">
-            <input type="hidden" name="tag-n" value="">
+          <form id="tag-selection" method="post" action="/article">
+            <input class="tag-hidden" type="hidden" name="tag-n" value="">
+            <input type="submit" class="button">
           </form>
 
         </div>

@@ -153,3 +153,9 @@
 
 (defn view-start-page [req]
   (->> (start-page) response))
+
+(defn post-article [req]
+  (let [params (:form-params req)
+        tags (->> (filter #(= (second %) "true") params) (map first))]
+    (response (str (apply str jepp)))
+    ))
