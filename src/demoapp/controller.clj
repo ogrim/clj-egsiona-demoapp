@@ -3,14 +3,50 @@
         [ring.util.response])
   (:require [clj-egsiona.core :as e]
             [clojure.string :as str]
-            [clojure.java.jdbc :as sql])
+            [clojure.java.jdbc :as sql]
+            [clojure.string :as str])
   (:import [java.net URL]
            [de.l3s.boilerpipe.extractors ArticleExtractor DefaultExtractor]))
 
 (def ^{:dynamic true :private true} *db* (atom nil))
+(def current-content (atom nil))
+
+(defn create-tables []
+  (do (try (sql/with-connection @*db*
+          (sql/create-table "articles"
+                            [:id :text "PRIMARY KEY"]
+                            [:article :text]
+                            [:timestamp :datetime]))
+        (catch Exception e (println e)))
+      (try (sql/with-connection @*db*
+          (sql/create-table "locations"
+                            [:article_id :text]
+                            [:location_id :text]
+                            [:name :text]))
+        (catch Exception e (println e)))
+      (try (sql/with-connection @*db*
+          (sql/create-table "tags"
+                            [:article_id :text]
+                            [:location_id :text]))
+        (catch Exception e (println e)))))
+
+(defn get-next-id []
+  (let [result (sql/with-connection @*db*
+                 (sql/with-query-results rs ["select id from articles order by id desc limit 1"]
+                   (doall rs)))]
+    (if (empty? result) 1 (-> result first :id Integer/parseInt inc))))
+
+(defn persist-article [i text numbered-locations tags]
+  (sql/with-connection @*db*
+    (sql/insert-rows "articles" [i text (java.sql.Timestamp. (.getTime (java.util.Date.)))])
+    (doseq [[num loc] numbered-locations]
+      (sql/insert-rows "locations" [i num loc]))
+    (doseq [tag tags]
+      (sql/insert-rows "tags" [i tag]))))
 
 (defn configure-obt [path db]
   (do (reset! *db* db)
+      (create-tables)
       (e/set-obt path)
       (e/set-db db)
       (e/create-tables)))
@@ -147,7 +183,8 @@
 (defn view-results-page [req]
   (let [params (:form-params req)
         [text locations] (process-params params)
-        numbered-locations (enumerate-locations locations)]
+        numbered-locations (enumerate-locations locations)
+        _ (reset! current-content {:id (get-next-id) :text text :locations numbered-locations})]
     (->> (result-page (article->html text numbered-locations) numbered-locations)
          response)))
 
@@ -156,6 +193,6 @@
 
 (defn post-article [req]
   (let [params (:form-params req)
-        tags (->> (filter #(= (second %) "true") params) (map first))]
-    (response (str (apply str jepp)))
-    ))
+        tags (->> (filter #(= (second %) "true") params) (map first) (map #(str/split % #"tag-")) (map second))
+        _ (persist-article (:id @current-content) (:text @current-content) (:locations @current-content) tags)]
+    (response (str (apply str tags) " - current content:" (apply str @current-content)))))
