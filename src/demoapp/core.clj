@@ -6,11 +6,12 @@
         [net.cgrand.moustache])
   (:gen-class :main true))
 
-(defn init [obt-path]
+(defn init [obt-path api-key]
   (configure-obt obt-path
                  {:classname   "org.sqlite.JDBC"
                   :subprotocol "sqlite"
-                  :subname     "database.db"}))
+                  :subname     "database.db"}
+                 api-key))
 
 (def routes
   (app
@@ -22,10 +23,12 @@
                :post (wrap-params view-results-page)}
    ["article"] {:get (delegate view-article-list)
                 :post (wrap-params post-article)}
-   ["article" id] {:get (delegate view-article id)}))
+   ["article" id] {:get (delegate view-article id)}
+   ["test"] (delegate texthax)
+   ["test" id] {:get (delegate google-view id)}))
 
-(defn -main [port obt-path]
-  (do (init obt-path)
+(defn -main [port obt-path api-key]
+  (do (init obt-path api-key)
       (run-jetty #'routes {:port (Integer/parseInt port) :join? false})))
 
-; (def server (-main "8082" "localhost:8085"))
+; (def server (-main "8082" "localhost:8085" "apikey1234234"))

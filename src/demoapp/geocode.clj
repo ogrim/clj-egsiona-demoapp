@@ -1,49 +1,55 @@
-(ns clj-egsiona.geocode
+(ns demoapp.geocode
   (:require [geocoder.core :as g]
-            [clj-time.core :as t]
-            [ogrim.common.db :as db]
-            [clojure.java.jdbc :as sql])
-  (:use [clj-egsiona.db-provider]))
+;            [clj-time.core :as t]
+            [clojure.java.jdbc :as sql]))
 
 (def ^{:dynamic true :private true} *reset-time* (atom nil))
 (def ^{:dynamic true :private true} *api-calls* (atom 0))
 (def ^{:private true} api-max-requests 2500)
-(def ^{:dynamic true :private true}  *db* (atom (get-db)))
+(def ^{:dynamic true}  *db* (atom nil))
 
-(defn reset-db []
-  (reset! *db* (get-db)))
+(defn set-db [db-spec]
+  (reset! *db* db-spec))
 
-(defn- reset-time []
-  (reset! *reset-time* (t/plus (t/now) (t/hours 24))))
+(comment (defn- reset-time []
+   (reset! *reset-time* (t/plus (t/now) (t/hours 24)))))
 
-(defn- can-call-api? []
-  (cond (not @*reset-time*) (do (reset-time) true)
-        (< @*api-calls* api-max-requests) true
-        (t/after? (t/now) @*reset-time*) (do (reset-time) (reset! *api-calls* 0) true)
-        :else false))
+(defn- can-call-api? [] true)
 
-(defn- db-locations [location]
+(comment (defn- can-call-api? []
+           (cond (not @*reset-time*) (do (reset-time) true)
+                 (< @*api-calls* api-max-requests) true
+                 (t/after? (t/now) @*reset-time*) (do (reset-time) (reset! *api-calls* 0) true)
+                 :else false)))
+
+(defn- db-locations [name]
   (if (nil? @*db*) nil
-      (let [[loc] (db/query-db @*db* ["SELECT * FROM location WHERE id = ?" (.toUpperCase location)])]
-        (:location loc))))
+      (->> (sql/with-connection @*db*
+             (sql/with-query-results rs ["SELECT * FROM geocoded WHERE name = ?"
+                                         (.toLowerCase name)]
+               (doall rs)))
+           (sort-by :id))))
 
-(defn- persist-geocoded [location geocoded]
+(defn- persist-geocoded [location]
   (cond (nil? @*db*) false
-        (empty? (db-locations location))
-        (do (db/insert-row @*db* "location" [(.toUpperCase location) (str "(" (apply str geocoded) ")")])
-            true)))
+        :else (do (sql/with-connection @*db*
+                    (sql/insert-rows "geocoded" location))
+                  true)))
 
 (defn geocode [address]
   (let [location (db-locations address)]
-    (if (seq location)
-      (read-string location)
-      (if can-call-api?
-        (let [geocoded (g/geocode-address address)]
-          (do (persist-geocoded address geocoded)
-                  geocoded))))))
-
-(comment (try (sql/with-connection @*db*
-        (sql/create-table "location"
-                          [:id :text "PRIMARY KEY"]
-                          [:location :text]))
-      (catch Exception e (println e))))
+    (if (empty? location)
+      (let [geocoded (g/geocode-address address)]
+        (doall (map #(persist-geocoded [nil
+                                        (.toLowerCase address)
+                                        (:latitude (:location %))
+                                        (:longitude (:location %))
+                                        (:city %)
+                                        (:name (:country %))
+                                        (:street-name %)
+                                        (:street-number %)
+                                        (:postal-code %)
+                                        (:region %)])
+                    geocoded))
+        geocoded)
+      location)))

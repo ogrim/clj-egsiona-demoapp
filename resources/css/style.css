@@ -9,11 +9,26 @@
     margin-left: 70px;
 }
 
+#left-side {
+    float: left;
+    width: 600px;
+    margin-right: 20px;
+}
+
 #article {
     float: left;
     width: 600px;
     background: #eee;
     padding: 10px;
+}
+
+#map_canvas {
+    background: #ddd;
+    float: left;
+    width: 600px;
+    height: 600px;
+    padding: 10px;
+    margin-top: 10px;
 }
 
 #locations {

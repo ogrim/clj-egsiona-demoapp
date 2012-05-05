@@ -4,10 +4,12 @@
   (:require [clj-egsiona.core :as e]
             [clojure.string :as str]
             [clojure.java.jdbc :as sql]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [demoapp.geocode :as geo])
   (:import [java.net URL]
            [de.l3s.boilerpipe.extractors ArticleExtractor DefaultExtractor]))
 
+(def ^{:dynamic true :private true} *google-api* (atom nil))
 (def ^{:dynamic true :private true} *db* (atom nil))
 (def current-content (atom nil))
 
@@ -28,7 +30,20 @@
           (sql/create-table "tags"
                             [:article_id :text]
                             [:location_id :text]))
-        (catch Exception e (println e)))))
+        (catch Exception e (println e)))
+      (try (sql/with-connection @*db*
+        (sql/create-table "geocoded"
+                          [:id "INTEGER PRIMARY KEY"]
+                          [:name :text]
+                          [:latitude :text]
+                          [:longitude :text]
+                          [:city :text]
+                          [:country :text]
+                          [:street_name :text]
+                          [:street_number :text]
+                          [:postal_code :text]
+                          [:region :text]))
+           (catch Exception e (println e)))))
 
 (defn get-next-id []
   (let [result (atom [])]
@@ -81,11 +96,13 @@
     (doseq [tag tags]
       (sql/insert-rows "tags" [i tag]))))
 
-(defn configure-obt [path db]
+(defn configure-obt [path db api-key]
   (do (reset! *db* db)
+      (reset! *google-api* api-key)
       (create-tables)
       (e/set-obt path)
       (e/set-db db)
+      (geo/set-db db)
       (e/create-tables)))
 
 (def whitelisted-letters
@@ -206,16 +223,16 @@
 
 (defn article->html [article locations]
   (if (empty? locations) (str->html article)
-   (let [single-locations (filter #(= (count (str/split (second %) #"\s")) 1) locations)
-         multi-locations (->> locations
-                              (map #(vector (first %) (str/split (second %) #"\s")))
-                              (filter #(> (count (second %)) 1)))]
-     (->> (reduce process-multi-location article multi-locations)
-          (process-single-location single-locations)
-          (interpose " ")
-          (apply str)
-          .trim
-          str->html))))
+      (let [single-locations (filter #(= (count (str/split (second %) #"\s")) 1) locations)
+            multi-locations (->> locations
+                                 (map #(vector (first %) (str/split (second %) #"\s")))
+                                 (filter #(> (count (second %)) 1)))]
+        (->> (reduce process-multi-location article multi-locations)
+             (process-single-location single-locations)
+             (interpose " ")
+             (apply str)
+             .trim
+             str->html))))
 
 (defn view-results-page [req]
   (let [params (:form-params req)
@@ -230,7 +247,7 @@
   (->> (start-page) response))
 
 (defn view-article [req id]
-  (let [{tags :tags article :article} (get-article id)
+  (let [{:keys [tags article]} (get-article id)
         locations (enumerate-locations tags)]
     (if (nil? article) (redirect "/article")
         (->> (article-page (article->html article locations) locations) response))))
@@ -241,6 +258,32 @@
 
 (defn post-article [req]
   (let [params (:form-params req)
-        tags (->> (filter #(= (second %) "true") params) (map first) (map #(str/split % #"tag-")) (map second))
-        _ (persist-article (:id @current-content) (:text @current-content) (:locations @current-content) tags)]
+        tags (->> (filter #(= (second %) "true") params)
+                  (map first)
+                  (map #(str/split % #"tag-"))
+                  (map second))
+        _ (persist-article (:id @current-content)
+                           (:text @current-content)
+                           (:locations @current-content)
+                           tags)]
     (redirect (str "/article/" (:id @current-content)))))
+
+(defn geocode [[i location]]
+  (let [result (->> (geo/geocode location) first)]
+    {:i (str i)
+     :name (.toLowerCase location)
+     :lat (-> result :latitude str)
+     :lon (-> result :longitude str)}))
+
+(defn google-view [req id]
+  (let [{:keys [tags article]} (get-article id)
+        locations (enumerate-locations tags)
+        geocode (map geocode locations)]
+    (->> (map-page {:api-key @*google-api*
+                    :article (article->html article locations)
+                    :locations locations
+                    :geocoded geocode})
+         response)))
+
+(comment (defn texthax [req]
+   (response (map-page {:api-key @*google-api* :article (article->html a2 l1) :locations l1 :geocoded g1}))))
