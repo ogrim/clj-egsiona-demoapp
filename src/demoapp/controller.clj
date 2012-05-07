@@ -269,11 +269,13 @@
     (redirect (str "/article/" (:id @current-content)))))
 
 (defn geocode [[i location]]
-  (let [result (->> (geo/geocode location) first)]
+  (let [result (->> (geo/geocode location) first)
+        country (:country result)]
     {:i (str i)
      :name (.toLowerCase location)
      :lat (-> result :latitude str)
-     :lon (-> result :longitude str)}))
+     :lon (-> result :longitude str)
+     :country (if (seq country) (str/lower-case country) "")}))
 
 (defn google-view [req id]
   (let [{:keys [tags article]} (get-article id)
@@ -284,3 +286,6 @@
                     :locations locations
                     :geocoded geocode})
          response)))
+
+(defn- get-geocoded [id]
+  (->> id get-article :tags enumerate-locations (map geocode)))

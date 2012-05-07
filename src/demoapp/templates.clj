@@ -1,6 +1,8 @@
 (ns demoapp.templates
   (:use [net.cgrand.enlive-html]))
 
+(def ^{:private true} default-loc {:lat "60.3912628" :lon "5.3220544"})
+
 (defmacro maybe-content
   ([expr] `(if-let [x# ~expr] (content x#) identity))
   ([expr & exprs] `(maybe-content (or ~expr ~@exprs))))
@@ -50,42 +52,53 @@
   [:h1]  (maybe-content h1)
   [:div#content] (maybe-content main))
 
-(comment (defsnippet map-view "maps.html" [:script] [geocoded]
-   (let [f (first geocoded)
-         c (format "function initialize() {
-             var myOptions = {
-               center: new google.maps.LatLng(%s, %s),
-               zoom: 8,
-               mapTypeId: google.maps.MapTypeId.ROADMAP
-          };
-          var map = new google.maps.Map(document.getElementById(\"map_canvas\"),
-            myOptions);
-          }" (:lat f) (:lon f))])
-   (substitute geocoded)))
+(defn make-marker [{:keys [i lat lon name]}]
+  (str "var position" i " = new google.maps.LatLng(" lat ", " lon ");
+        bounds.extend(position" i ");
 
-(comment (defn test1 [lat lon]
-   (format "function initialize() {
-             var myOptions = {
-               center: new google.maps.LatLng(%s, %s),
-               zoom: 8,
-               mapTypeId: google.maps.MapTypeId.ROADMAP
-          };
-          var map = new google.maps.Map(document.getElementById(\"map_canvas\"),
-            myOptions);
-          }" lat lon)))
+        var marker" i " = new google.maps.Marker({
+             position: position" i ",
+             title:\"" name "\"
+        });
 
-(comment (snippet "maps.html" [:script] [geocoded]
-          (let [f (first geocoded)
-                c (format "function initialize() {
+        var infostring" i " = '"name" <br /> latitude: " lat " <br /> longitude: " lon"';
+
+        var infowindow" i " = new google.maps.InfoWindow({
+          content: infostring" i "
+        });
+
+        marker" i ".setMap(map);
+
+        google.maps.event.addListener(marker"i", 'click', function() {
+          infowindow"i".open(map,marker"i");
+        });
+"))
+
+(defn generate-script [geocoded]
+  (let [[loc & locs :as locations] (filter #(seq (:lat %)) geocoded)
+        center (if (nil? loc) default-loc loc)
+        c (format "
+            var centerloc = new google.maps.LatLng(%s, %s);
+            function initialize() {
              var myOptions = {
-               center: new google.maps.LatLng(%s, %s),
-               zoom: 8,
+               center: centerloc,
+               zoom: 10,
                mapTypeId: google.maps.MapTypeId.ROADMAP
           };
-          var map = new google.maps.Map(document.getElementById(\"map_canvas\"),
-            myOptions);
-          }" (:lat f) (:lon f))])
-          (substitute geocoded)))
+          var map = new google.maps.Map(document.getElementById(\"map_canvas\"), myOptions);
+          var bounds = new google.maps.LatLngBounds();
+          bounds.extend(centerloc);
+
+          %s
+
+          map.fitBounds(bounds);
+          }" (:lat center) (:lon center) "";(->> (map make-marker locations) (apply str))
+           )]
+    c))
+
+(defsnippet construct-map "maps.html" [:script] [geocoded]
+  (let [script (generate-script geocoded)]
+    (content script)))
 
 (defn str-loc [loc]
   (str (:name loc) " lat:" (:lat loc) " - lon:" (:lon loc) "  \n"))
@@ -94,13 +107,12 @@
   [:head] (content (conj (iso-8859-1)
                          (first ((snippet "snippets.html" [:link] [])))
                          (first (google-map-script api-key))
-                         ;((snippet "maps.html" [:script] [s] (content s)) "-34.397" "150.644")
-                         (first ((snippet "maps.html" [:script] [])))))
+                         (first (construct-map geocoded))))
   [:ul#top-menu :li] (content (top-menu))
   [:body] (set-attr :onload "initialize()")
   [:h1]  (content "View article")
-;  [:div#article :p] (content article)
-  [:div#article :p]  (content (map str-loc geocoded))
+  [:div#article :p] (content article)
+;  [:div#article :p]  (content (map str-loc geocoded))
   [:ul.tags :li] (clone-for [{:keys [i name]} geocoded]
                             [:a] (comp (content name) (add-class (str "tag-" i)))))
 
