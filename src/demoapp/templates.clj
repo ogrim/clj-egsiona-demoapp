@@ -87,21 +87,6 @@
           }" (:lat f) (:lon f))])
           (substitute geocoded)))
 
-(deftemplate map-page "single.html" [{:keys [api-key article locations geocoded]}]
-  [:head] (content (conj (iso-8859-1)
-                         (first ((snippet "snippets.html" [:link] [])))
-                         (first (google-map-script api-key))
-                         ;((snippet "maps.html" [:script] [s] (content s)) "-34.397" "150.644")
-                         (first ((snippet "maps.html" [:script] [])))))
-  [:ul#top-menu :li] (content (top-menu))
-  [:body] (set-attr :onload "initialize()")
-  [:h1]  (content "View article")
-  [:div#article :p] (content article)
-;  [:div#article :p]  (content (apply str geocoded))
-  [:ul.tags :li] (clone-for [{:keys [i name]} geocoded];[[i name] locations];[{:keys [i name lat lon]} geocoded]
-                            [:a] (comp (content name) (add-class (str "tag-" i)))
-))
-
 (defn str-loc [loc]
   (str (:name loc) " lat:" (:lat loc) " - lon:" (:lon loc) "  \n"))
 
@@ -118,7 +103,6 @@
   [:div#article :p]  (content (map str-loc geocoded))
   [:ul.tags :li] (clone-for [{:keys [i name]} geocoded]
                             [:a] (comp (content name) (add-class (str "tag-" i)))))
-
 
 (defn start-page [] (base {:main (menu)}))
 

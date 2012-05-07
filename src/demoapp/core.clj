@@ -24,11 +24,12 @@
    ["article"] {:get (delegate view-article-list)
                 :post (wrap-params post-article)}
    ["article" id] {:get (delegate view-article id)}
-   ["test"] (delegate texthax)
-   ["test" id] {:get (delegate google-view id)}))
+   ["test" id] (delegate google-view id)))
 
 (defn -main [port obt-path api-key]
   (do (init obt-path api-key)
       (run-jetty #'routes {:port (Integer/parseInt port) :join? false})))
+
+; (def server (-main "8082" "/home/ogrim/bin/The-Oslo-Bergen-Tagger" "api"))
 
 ; (def server (-main "8082" "localhost:8085" "apikey1234234"))

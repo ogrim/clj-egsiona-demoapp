@@ -36,20 +36,28 @@
                     (sql/insert-rows "geocoded" location))
                   true)))
 
+(try (sql/with-connection @*db*
+          (sql/create-table "articles"
+                            [:id :text "PRIMARY KEY"]
+                            [:article :text]
+                            [:timestamp :datetime]))
+        (catch Exception e (println e)))
+
 (defn geocode [address]
   (let [location (db-locations address)]
     (if (empty? location)
-      (let [geocoded (g/geocode-address address)]
-        (doall (map #(persist-geocoded [nil
-                                        (.toLowerCase address)
-                                        (:latitude (:location %))
-                                        (:longitude (:location %))
-                                        (:city %)
-                                        (:name (:country %))
-                                        (:street-name %)
-                                        (:street-number %)
-                                        (:postal-code %)
-                                        (:region %)])
-                    geocoded))
+      (let [geocoded (try (g/geocode-address address) (catch Exception _ nil))]
+        (if (not (nil? geocoded))
+          (doall (map #(persist-geocoded [nil
+                                          (.toLowerCase address)
+                                          (:latitude (:location %))
+                                          (:longitude (:location %))
+                                          (:city %)
+                                          (:name (:country %))
+                                          (:street-name %)
+                                          (:street-number %)
+                                          (:postal-code %)
+                                          (:region %)])
+                      geocoded)))
         geocoded)
       location)))

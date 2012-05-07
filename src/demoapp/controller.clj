@@ -284,6 +284,3 @@
                     :locations locations
                     :geocoded geocode})
          response)))
-
-(comment (defn texthax [req]
-   (response (map-page {:api-key @*google-api* :article (article->html a2 l1) :locations l1 :geocoded g1}))))
