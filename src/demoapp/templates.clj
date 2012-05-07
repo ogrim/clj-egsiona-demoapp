@@ -52,9 +52,9 @@
   [:h1]  (maybe-content h1)
   [:div#content] (maybe-content main))
 
-(defn make-marker [{:keys [i lat lon name]}]
+(defn make-marker [{:keys [i lat lon name country]}]
   (str "var position" i " = new google.maps.LatLng(" lat ", " lon ");
-        bounds.extend(position" i ");
+        " (if (= country "norway") (str "bounds.extend(position" i ");")) "
 
         var marker" i " = new google.maps.Marker({
              position: position" i ",
@@ -76,24 +76,24 @@
 
 (defn generate-script [geocoded]
   (let [[loc & locs :as locations] (filter #(seq (:lat %)) geocoded)
-        center (if (nil? loc) default-loc loc)
+        {:keys [lat lon]} (if (nil? loc) default-loc loc)
+        center (str "new google.maps.LatLng(" lat ", " lon ")")
         c (format "
-            var centerloc = new google.maps.LatLng(%s, %s);
             function initialize() {
              var myOptions = {
-               center: centerloc,
-               zoom: 10,
+               center: %s,
+               zoom: 8,
                mapTypeId: google.maps.MapTypeId.ROADMAP
           };
+
           var map = new google.maps.Map(document.getElementById(\"map_canvas\"), myOptions);
           var bounds = new google.maps.LatLngBounds();
-          bounds.extend(centerloc);
+          bounds.extend(%s);
 
           %s
 
           map.fitBounds(bounds);
-          }" (:lat center) (:lon center) "";(->> (map make-marker locations) (apply str))
-           )]
+          }" center center (->> (map make-marker locations) (apply str)))]
     c))
 
 (defsnippet construct-map "maps.html" [:script] [geocoded]

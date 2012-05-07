@@ -269,7 +269,7 @@
     (redirect (str "/article/" (:id @current-content)))))
 
 (defn geocode [[i location]]
-  (let [result (->> (geo/geocode location) first)
+  (let [result (->> (geo/geocode location) seq first)
         country (:country result)]
     {:i (str i)
      :name (.toLowerCase location)
