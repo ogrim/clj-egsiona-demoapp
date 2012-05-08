@@ -76,25 +76,27 @@
 
 (defn generate-script [geocoded]
   (let [[loc & locs :as locations] (filter #(seq (:lat %)) geocoded)
-        {:keys [lat lon]} (if (nil? loc) default-loc loc)
+        norge (filter #(= (:country %) "norway") locations)
+        {:keys [lat lon]} (if (nil? (first norge)) default-loc (first norge))
         center (str "new google.maps.LatLng(" lat ", " lon ")")
-        c (format "
+        markers (->> (map make-marker locations) (apply str))
+        fitbounds (if (> (count norge) 1) "map.fitBounds(bounds);" "")]
+    (str "
             function initialize() {
              var myOptions = {
-               center: %s,
+               center: " center ",
                zoom: 8,
                mapTypeId: google.maps.MapTypeId.ROADMAP
           };
 
           var map = new google.maps.Map(document.getElementById(\"map_canvas\"), myOptions);
           var bounds = new google.maps.LatLngBounds();
-          bounds.extend(%s);
+          bounds.extend(" center ");
 
-          %s
+          " markers "
 
-          map.fitBounds(bounds);
-          }" center center (->> (map make-marker locations) (apply str)))]
-    c))
+          " fitbounds "
+          }")))
 
 (defsnippet construct-map "maps.html" [:script] [geocoded]
   (let [script (generate-script geocoded)]
