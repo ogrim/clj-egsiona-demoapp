@@ -36,28 +36,28 @@
                     (sql/insert-rows "geocoded" location))
                   true)))
 
-(try (sql/with-connection @*db*
-          (sql/create-table "articles"
-                            [:id :text "PRIMARY KEY"]
-                            [:article :text]
-                            [:timestamp :datetime]))
-        (catch Exception e (println e)))
+(defn- location->map [[_ _ lat lon _ country]]
+  {:latitude (str lat)
+   :longitude (str lon)
+   :country (if (seq country) (.toLowerCase country) "")})
 
 (defn geocode [address]
   (let [location (db-locations address)]
     (if (empty? location)
       (let [geocoded (try (g/geocode-address address) (catch Exception _ nil))]
         (if (not (nil? geocoded))
-          (doall (map #(persist-geocoded [nil
-                                          (.toLowerCase address)
-                                          (:latitude (:location %))
-                                          (:longitude (:location %))
-                                          (:city %)
-                                          (:name (:country %))
-                                          (:street-name %)
-                                          (:street-number %)
-                                          (:postal-code %)
-                                          (:region %)])
-                      geocoded)))
-        geocoded)
+          (let [formated (map #(vector nil
+                                      (.toLowerCase address)
+                                      (:latitude (:location %))
+                                      (:longitude (:location %))
+                                      (:city %)
+                                      (:name (:country %))
+                                      (:street-name %)
+                                      (:street-number %)
+                                      (:postal-code %)
+                                      (:region %))
+                              geocoded)]
+            (doall (map persist-geocoded formated))
+            (list (location->map (first formated))))
+          nil))
       location)))
