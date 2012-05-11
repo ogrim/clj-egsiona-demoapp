@@ -23,7 +23,8 @@
                :post (wrap-params view-results-page)}
    ["article"] {:get (delegate view-article-list)
                 :post (wrap-params post-article)}
-   ["article" id] {:get (delegate google-view id)}))
+   ["article" id] {:get (delegate google-view id)}
+   [&] (delegate view-start-page)))
 
 (defn -main [port obt-path api-key]
   (do (init obt-path api-key)
